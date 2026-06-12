@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DEAD SPACE HUSTLE // ASTEROID FIELD PORTFOLIO</title>
+<meta name="description" content="Tshwanelo's portfolio. You are the ship. Shoot the asteroids to learn more. 1979 called, it approves.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: #000;
+    overflow: hidden;
+    font-family: 'VT323', 'Courier New', monospace;
+    color: #fff;
+    -webkit-user-select: none; user-select: none;
+  }
+  #game { position: fixed; inset: 0; display: block; background: #000; }
+
+  /* ---------- CRT EFFECTS ---------- */
+  #scanlines {
+    position: fixed; inset: 0; pointer-events: none; z-index: 50;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0px, rgba(0,0,0,.28) 1px, transparent 1px, transparent 3px);
+  }
+  #vignette {
+    position: fixed; inset: 0; pointer-events: none; z-index: 51;
+    background: radial-gradient(ellipse at center, transparent 52%, rgba(0,0,0,.32) 78%, rgba(0,0,0,.75) 100%);
+  }
+  #flicker {
+    position: fixed; inset: 0; pointer-events: none; z-index: 52;
+    background: rgba(255,255,255,.025);
+    animation: flick 0.12s infinite;
+  }
+  @keyframes flick {
+    0% { opacity: .9; } 50% { opacity: .55; } 100% { opacity: .85; }
+  }
+
+  /* ---------- HUD: SECTION STATUS BAR ---------- */
+  #secbar {
+    position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
+    display: none; gap: 10px; z-index: 45; flex-wrap: wrap; justify-content: center;
+  }
+  .sec {
+    font-family: inherit; font-size: 19px; letter-spacing: 3px;
+    color: #666; background: rgba(0,0,0,.65);
+    border: 1px solid #444; padding: 4px 14px 2px; cursor: pointer;
+  }
+  .sec.on {
+    color: #fff; border-color: #fff;
+    text-shadow: 0 0 9px rgba(255,255,255,.9);
+    box-shadow: 0 0 12px rgba(255,255,255,.45), inset 0 0 8px rgba(255,255,255,.12);
+  }
+  .sec:hover { border-color: #999; }
+
+  #hints {
+    position: fixed; bottom: 14px; left: 14px; z-index: 44;
+    font-size: 16px; letter-spacing: 2px; color: #555; display: none;
+  }
+
+  #toast {
+    position: fixed; top: 72px; left: 50%; transform: translateX(-50%);
+    z-index: 46; font-size: 24px; letter-spacing: 3px; text-align: center;
+    color: #fff; text-shadow: 0 0 12px rgba(255,255,255,.9);
+    opacity: 0; transition: opacity .25s; pointer-events: none; padding: 0 16px;
+  }
+
+  /* ---------- PANELS ---------- */
+  .panel {
+    display: none;
+    position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%);
+    width: min(660px, 94vw); max-height: 84vh; overflow-y: auto;
+    background: rgba(0,0,0,.93);
+    border: 2px solid #fff;
+    box-shadow: 0 0 22px rgba(255,255,255,.45), inset 0 0 40px rgba(255,255,255,.05);
+    padding: 26px 30px 30px; z-index: 60;
+    font-size: 21px; line-height: 1.45; letter-spacing: 1px;
+  }
+  .panel::-webkit-scrollbar { width: 8px; }
+  .panel::-webkit-scrollbar-thumb { background: #444; }
+  .panel h2 {
+    font-size: 30px; letter-spacing: 6px; font-weight: normal;
+    border-bottom: 1px solid #555; padding-bottom: 10px; margin-bottom: 16px;
+    text-shadow: 0 0 10px rgba(255,255,255,.8);
+  }
+  .panel h2 small { font-size: 16px; color: #777; letter-spacing: 2px; text-shadow: none; }
+  .panel .x {
+    position: absolute; top: 10px; right: 14px; cursor: pointer;
+    border: 1px solid #777; color: #ccc; background: none;
+    font-family: inherit; font-size: 20px; padding: 2px 10px; letter-spacing: 0;
+  }
+  .panel .x:hover { border-color: #fff; color: #fff; text-shadow: 0 0 8px #fff; }
+  .panel a { color: #fff; text-decoration: underline; text-shadow: 0 0 8px rgba(255,255,255,.7); }
+  .panel .dim { color: #888; }
+  .panel .row { margin: 10px 0; }
+  .panel .tag { color: #999; font-size: 17px; letter-spacing: 2px; }
+  .ph { color: #8a8a8a; border: 1px dashed #555; padding: 0 6px; }
+  .proj { border: 1px solid #444; padding: 12px 16px; margin: 14px 0; }
+  .proj b { letter-spacing: 3px; font-weight: normal; text-shadow: 0 0 8px rgba(255,255,255,.7); }
+  .bar { letter-spacing: 1px; white-space: pre; }
+  .panel .foot { margin-top: 18px; color: #666; font-size: 17px; border-top: 1px solid #333; padding-top: 10px; }
+  .btnrow { margin-top: 16px; }
+  .pbtn {
+    display: inline-block; border: 1px solid #fff; color: #fff; background: none;
+    font-family: inherit; font-size: 20px; letter-spacing: 3px;
+    padding: 6px 18px 4px; cursor: pointer; text-decoration: none !important; margin-right: 10px;
+    box-shadow: 0 0 10px rgba(255,255,255,.3);
+  }
+  .pbtn:hover { background: #fff; color: #000; text-shadow: none; }
+  .navlist button {
+    display: block; width: 100%; text-align: left;
+    background: none; border: 1px solid #555; color: #ddd;
+    font-family: inherit; font-size: 22px; letter-spacing: 4px;
+    padding: 10px 16px 8px; margin: 8px 0; cursor: pointer;
+  }
+  .navlist button:hover { border-color: #fff; color: #fff; text-shadow: 0 0 8px #fff; }
+  .navlist .state { float: right; font-size: 16px; color: #777; letter-spacing: 2px; }
+
+  /* ---------- TOUCH CONTROLS ---------- */
+  #touch { position: fixed; inset: 0; z-index: 47; display: none; pointer-events: none; }
+  .tbtn {
+    position: absolute; width: 64px; height: 64px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.5); background: rgba(255,255,255,.06);
+    color: #fff; font-family: inherit; font-size: 26px;
+    pointer-events: auto; touch-action: none;
+  }
+  .tbtn:active { background: rgba(255,255,255,.25); }
+  #tL { left: 18px;  bottom: 64px; }
+  #tR { left: 100px; bottom: 64px; }
+  #tT { right: 100px; bottom: 64px; }
+  #tF { right: 18px; bottom: 64px; }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+<div id="flicker"></div>
+<div id="toast"></div>
+<div id="hints">N:NAV &nbsp;G:REALISM &nbsp;H:HYPERSPACE &nbsp;M:SOUND &nbsp;P:PAUSE</div>
+
+<div id="secbar">
+  <button class="sec" data-key="about">ABOUT</button>
+  <button class="sec" data-key="projects">PROJECTS</button>
+  <button class="sec" data-key="skills">SKILLS</button>
+  <button class="sec" data-key="contact">CONTACT</button>
+  <button class="sec" data-key="extras">???</button>
+</div>
+
+<div id="touch">
+  <button class="tbtn" id="tL">&#8634;</button>
+  <button class="tbtn" id="tR">&#8635;</button>
+  <button class="tbtn" id="tT">&#9650;</button>
+  <button class="tbtn" id="tF">&#9679;</button>
+</div>
+
+<!-- ================= ABOUT ================= -->
+<div class="panel" id="panel-about">
+  <button class="x" data-close>X [ESC]</button>
+  <h2>PILOT DOSSIER <small>// SECTOR: ABOUT</small></h2>
+  <div class="row"><span class="tag">CALLSIGN....</span> TSHWANELO</div>
+  <div class="row"><span class="tag">FULL ID.....</span> DITSHWANELO TUMANE</div>
+  <div class="row"><span class="tag">CLASS.......</span> SOFTWARE ENGINEER - CLOUD, AI + FULL-STACK</div>
+  <div class="row"><span class="tag">SECTOR......</span> CAPE TOWN, SOUTH AFRICA</div>
+  <div class="row"><span class="tag">STATION.....</span> LESAKA TECHNOLOGIES [JSE/NASDAQ FINTECH]</div>
+  <div class="row"><span class="tag">CERTS.......</span> AZURE AI FUNDAMENTALS / AWS CLOUD PRACTITIONER / 25+ AZURE BADGES</div>
+  <div class="row" style="margin-top:16px;">
+    I am Software engineer working the intersection of intelligent automation and
+    practical delivery: agentic AI systems, Azure + AWS cloud architecture, and
+    full-stack engineering across Python, TypeScript/React and PostgreSQL.
+    Currently building financial services applications inside a high-volume
+    payment and merchant ecosystem at Lesaka Technologies. Also commands a
+    private fleet of AI agents (see HANGAR BAY).
+  </div>
+  <div class="row" style="margin-top:14px;"><span class="tag">FLIGHT LOG:</span></div>
+  <div class="row bar">2026+    FULL STACK DEVELOPER ... LESAKA TECHNOLOGIES
+2025-26  SOFTWARE ENGINEER ....... NETCAMPUS GROUP
+         &gt; AI Product Developer ... MANDELA LEGACY FOUNDATION
+2024-25  SOFTWARE DEVELOPER ...... CAPE CODE COLLECTIVE
+2022-23  SYSTEMS TRAINEE ......... JMM MINING</div>
+  <div class="row dim" style="margin-top:14px;">
+    MISSION STATEMENT: Scale the highest heights. Boil the ocean if need be. Get that bag.
+  </div>
+  <div class="foot">// FULL SERVICE RECORD: GRAB THE CV IN THE COMMS ARRAY (CONTACT).</div>
+</div>
+
+<!-- ================= PROJECTS ================= -->
+<div class="panel" id="panel-projects">
+  <button class="x" data-close>X [ESC]</button>
+  <h2>HANGAR BAY <small>// SECTOR: PROJECTS</small></h2>
+  <div class="dim">One decorated mission. Five ships docked. Each one flies. Mostly.</div>
+
+  <div class="proj">
+    <b>MANDELA LEGACY FOUNDATION</b> <span class="tag">// FEATURED MISSION - AI Product Developer</span><br>
+    Outsourced from Netcampus on competitive selection to lead the foundation's
+    digital transformation end-to-end: bridging legacy data with AI-driven
+    automation on Azure AI Language and cloud infrastructure. Owned the
+    architectural decisions. Shipped the programme.
+  </div>
+  <div class="proj">
+    <b>ALEXANDRIA</b> <span class="tag">// API INTELLIGENCE BROKER</span><br>
+    Sovereign intelligence broker and API catalog librarian. Audits the vault,
+    classifies APIs, and decides which ideas survive the viability protocol.<br>
+    <span class="ph">Add stack + link</span>
+  </div>
+  <div class="proj">
+    <b>IBUTLER</b> <span class="tag">// PERSONAL OPS AGENT</span><br>
+    <span class="ph">Describe iButler: what it automates, what it saves you, the stack.</span>
+  </div>
+  <div class="proj">
+    <b>JOB HUNTER</b> <span class="tag">// CAREER OPS AGENT</span><br>
+    <span class="ph">Describe Job Hunter: how it scouts, filters and applies.</span>
+  </div>
+  <div class="foot">// Dont be a stranger to your own potential.</div>
+</div>
+
+<!-- ================= SKILLS ================= -->
+<div class="panel" id="panel-skills">
+  <button class="x" data-close>X [ESC]</button>
+  <h2>SHIP LOADOUT <small>// SECTOR: SKILLS</small></h2>
+  <div class="dim">Weapons and systems calibration. Cross-checked against the service record.</div>
+  <div class="row bar">AI + AGENTIC SYSTEMS       [&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9617;]</div>
+  <div class="row bar">CLOUD: AZURE + AWS         [&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9617;]</div>
+  <div class="row bar">APIS + INTEGRATION         [&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9617;]</div>
+  <div class="row bar">PYTHON + ADVANCED SQL      [&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9617;&#9617;]</div>
+  <div class="row bar">TYPESCRIPT + REACT         [&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9617;&#9617;]</div>
+  <div class="row bar">POSTGRES + DATA PIPELINES  [&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9617;&#9617;]</div>
+  <div class="row bar">CI/CD + DEVOPS             [&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9619;&#9617;&#9617;&#9617;]</div>
+  <div class="row" style="margin-top:16px;"><span class="tag">TOOLBELT:</span> PYTHON / TYPESCRIPT / REACT / POSTGRESQL / AZURE AI / AWS / GIT / CI-CD</div>
+  <div class="row" style="margin-top:6px;"><span class="tag">CERTIFIED:</span> MICROSOFT AZURE AI FUNDAMENTALS / AWS CLOUD PRACTITIONER / AZURE DATA ENGINEERING [IN PROGRESS]</div>
+  <div class="foot">// CALIBRATION NOTE: no bar is maxed. Recruiters can smell a maxed-out bar.</div>
+</div>
+
+<!-- ================= CONTACT ================= -->
+<div class="panel" id="panel-contact">
+  <button class="x" data-close>X [ESC]</button>
+  <h2>COMMS ARRAY <small>// SECTOR: CONTACT</small></h2>
+  <div class="row"><span class="tag">FREQUENCY...</span> <a href="mailto:tshwanelotumane2@gmail.com">tshwanelotumane2@gmail.com</a></div>
+  <div class="row"><span class="tag">BASE........</span> CAPE TOWN, SOUTH AFRICA [HYBRID-CAPABLE]</div>
+  <div class="row"><span class="tag">GITHUB......</span> <a href="https://github.com/AF1cpt" target="_blank" rel="noopener">github.com/AF1cpt</a></div>
+  <div class="row"><span class="tag">LINKEDIN....</span> <a href="https://www.linkedin.com/in/ditshwanelo-tumane-viewmypage/" target="_blank" rel="noopener">linkedin.com/in/ditshwanelo-tumane-viewmypage</a></div>
+  <div class="row"><span class="tag">RESPONSE....</span> FASTER THAN A light ;]</div>
+  <div class="btnrow">
+    <a class="pbtn" href="mailto:tshwanelotumane2@gmail.com?subject=TRANSMISSION%20FROM%20THE%20ASTEROID%20FIELD">TRANSMIT MESSAGE</a>
+    <a class="pbtn" href="CV_Ditshwanelo_Tumane.pdf" download>DOWNLOAD CV [PDF]</a>
+  </div>
+  <div class="foot">// ALL CHANNELS OPERATIONAL. TRANSMIT AT WILL.</div>
+</div>
+
+<!-- ================= EXTRAS ================= -->
+<div class="panel" id="panel-extras">
+  <button class="x" data-close>X [ESC]</button>
+  <h2>CLASSIFIED <small>// SECTOR: ???</small></h2>
+  <div class="row">You shot the mystery rock. Naturally.</div>
+  <div class="row" style="margin-top:12px;"><span class="tag">INTEL:</span></div>
+  <div class="row">- This entire site is ONE html file. No frameworks were harmed.</div>
+  <div class="row">- Every letter on the game screen is drawn line-by-line, like the 1979 original.</div>
+  <div class="row">- The pilot holds a competitive daily rating on Chess.com. Forward planning: confirmed.</div>
+  <div class="row">- Off duty: basketball. Quick decisions under pressure, same as flying this thing.</div>
+  <div class="row">- Once grew COREACTIVITIES to 465 followers across 60+ posts of arts + videography.</div>
+  <div class="row">- The saucer carries fun facts. Shoot it. It knows what it did.</div>
+  <div class="row">- Rumor: one of the saucers has a brother. Veterans say he is not over it.</div>
+  <div class="row">- There is a switch labeled G. It makes space honest: vast, silent, compass required.</div>
+  <div class="row">- There is a cheat code. It is older than this pilot. It starts with UP UP.</div>
+  <div class="row" style="margin-top:14px;"><span class="tag">HALL OF FAME:</span></div>
+  <div class="row bar">1. TSH ... 99999<br>2. AAA ... 12000<br>3. REC ... ..... (recruiter, ran out of quarters)</div>
+  <div class="foot">// BUILT WITH VECTORS AND AMBITION. NO TEMPLATES. EST 1979, REBOOTED 2026.</div>
+</div>
+
+<!-- ================= NAV (for busy recruiters) ================= -->
+<div class="panel" id="panel-nav">
+  <button class="x" data-close>X [ESC]</button>
+  <h2>NAVIGATION <small>// FOR PILOTS IN A HURRY</small></h2>
+  <div class="dim">Skipping the asteroid field? Fine. We will pretend this never happened.</div>
+  <div class="navlist">
+    <button data-open="about">ABOUT <span class="state"></span></button>
+    <button data-open="projects">PROJECTS <span class="state"></span></button>
+    <button data-open="skills">SKILLS <span class="state"></span></button>
+    <button data-open="contact">CONTACT <span class="state"></span></button>
+    <button data-open="extras">??? <span class="state"></span></button>
+    <button id="nav-real">REALISM PROTOCOL <span class="state">G</span></button>
+  </div>
+  <div class="foot">// True completion still requires shooting things. House rules.</div>
+</div>
+
+<script>
+"use strict";
+/* =====================================================================
+   TSHWANELO // ASTEROID FIELD PORTFOLIO
+   You are the ship. The portfolio is the asteroid field. Good luck.
+   ===================================================================== */
+const TAU = Math.PI * 2;
+const cvs = document.getElementById('game');
+const ctx = cvs.getContext('2d');
+let W = 0, H = 0, DPR = 1;
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth; H = window.innerHeight;
+  cvs.width = W * DPR; cvs.height = H * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+/* ---------------------------------------------------------------------
+   VECTOR FONT - every glyph is polylines on a 4x6 grid, drawn as strokes,
+   exactly how the 1979 cabinet did it. No pixels were rendered.
+--------------------------------------------------------------------- */
+const GLYPHS = {
+  'A': [[[0,6],[0,2],[2,0],[4,2],[4,6]],[[0,3.5],[4,3.5]]],
+  'B': [[[0,0],[0,6],[3,6],[4,5],[4,4],[3,3],[0,3]],[[3,3],[4,2],[4,1],[3,0],[0,0]]],
+  'C': [[[4,0],[0,0],[0,6],[4,6]]],
+  'D': [[[0,0],[0,6],[2,6],[4,4],[4,2],[2,0],[0,0]]],
+  'E': [[[4,0],[0,0],[0,6],[4,6]],[[0,3],[3,3]]],
+  'F': [[[4,0],[0,0],[0,6]],[[0,3],[3,3]]],
+  'G': [[[4,1],[4,0],[0,0],[0,6],[4,6],[4,3],[2,3]]],
+  'H': [[[0,0],[0,6]],[[4,0],[4,6]],[[0,3],[4,3]]],
+  'I': [[[1,0],[3,0]],[[2,0],[2,6]],[[1,6],[3,6]]],
+  'J': [[[4,0],[4,6],[1,6],[0,5]]],
+  'K': [[[0,0],[0,6]],[[4,0],[0,3],[4,6]]],
+  'L': [[[0,0],[0,6],[4,6]]],
+  'M': [[[0,6],[0,0],[2,2.5],[4,0],[4,6]]],
+  'N': [[[0,6],[0,0],[4,6],[4,0]]],
+  'O': [[[0,0],[4,0],[4,6],[0,6],[0,0]]],
+  'P': [[[0,6],[0,0],[4,0],[4,3],[0,3]]],
+  'Q': [[[0,0],[4,0],[4,6],[0,6],[0,0]],[[2.5,4],[4.5,6.5]]],
+  'R': [[[0,6],[0,0],[4,0],[4,3],[0,3]],[[1,3],[4,6]]],
+  'S': [[[4,0],[0,0],[0,3],[4,3],[4,6],[0,6]]],
+  'T': [[[0,0],[4,0]],[[2,0],[2,6]]],
+  'U': [[[0,0],[0,6],[4,6],[4,0]]],
+  'V': [[[0,0],[2,6],[4,0]]],
+  'W': [[[0,0],[0,6],[2,3.5],[4,6],[4,0]]],
+  'X': [[[0,0],[4,6]],[[4,0],[0,6]]],
+  'Y': [[[0,0],[2,2.5],[4,0]],[[2,2.5],[2,6]]],
+  'Z': [[[0,0],[4,0],[0,6],[4,6]]],
+  '0': [[[0,0],[4,0],[4,6],[0,6],[0,0]],[[4,0.5],[0,5.5]]],
+  '1': [[[1,1],[2,0],[2,6]],[[1,6],[3,6]]],
+  '2': [[[0,0],[4,0],[4,3],[0,3],[0,6],[4,6]]],
+  '3': [[[0,0],[4,0],[4,6],[0,6]],[[1.5,3],[4,3]]],
+  '4': [[[0,0],[0,3],[4,3]],[[4,0],[4,6]]],
+  '5': [[[4,0],[0,0],[0,3],[4,3],[4,6],[0,6]]],
+  '6': [[[4,0],[0,0],[0,6],[4,6],[4,3],[0,3]]],
+  '7': [[[0,0],[4,0],[2,6]]],
+  '8': [[[0,0],[4,0],[4,6],[0,6],[0,0]],[[0,3],[4,3]]],
+  '9': [[[0,6],[4,6],[4,0],[0,0],[0,3],[4,3]]],
+  '.': [[[1.7,5.4],[2.3,5.4],[2.3,6],[1.7,6],[1.7,5.4]]],
+  ',': [[[2.3,5.2],[2.3,6],[1.5,7]]],
+  '-': [[[0.8,3],[3.2,3]]],
+  '+': [[[2,1.5],[2,4.5]],[[0.5,3],[3.5,3]]],
+  '=': [[[0.6,2.2],[3.4,2.2]],[[0.6,3.8],[3.4,3.8]]],
+  ':': [[[1.7,1.4],[2.3,1.4],[2.3,2],[1.7,2],[1.7,1.4]],[[1.7,4.6],[2.3,4.6],[2.3,5.2],[1.7,5.2],[1.7,4.6]]],
+  '!': [[[2,0],[2,4]],[[1.7,5.4],[2.3,5.4],[2.3,6],[1.7,6],[1.7,5.4]]],
+  '?': [[[0,1],[0,0],[4,0],[4,3],[2,3],[2,4]],[[1.7,5.4],[2.3,5.4],[2.3,6],[1.7,6],[1.7,5.4]]],
+  '/': [[[4,0],[0,6]]],
+  '\'': [[[2,0],[2,1.5]]],
+  '>': [[[1,1],[3,3],[1,5]]],
+  '[': [[[3,0],[1.5,0],[1.5,6],[3,6]]],
+  ']': [[[1,0],[2.5,0],[2.5,6],[1,6]]],
+  ' ': []
+};
+function vtext(t, x, y, s, align, alpha) {
+  align = align || 'left'; alpha = (alpha === undefined) ? 1 : alpha;
+  const sc = s / 6, adv = s * 0.95;
+  const w = t.length * adv - (adv - 4 * sc);
+  let ox = x;
+  if (align === 'center') ox = x - w / 2;
+  if (align === 'right') ox = x - w;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.lineWidth = Math.max(1.2, s * 0.085);
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  for (let i = 0; i < t.length; i++) {
+    const g = GLYPHS[t[i].toUpperCase()];
+    if (g) {
+      for (const line of g) {
+        ctx.beginPath();
+        for (let j = 0; j < line.length; j++) {
+          const px = ox + line[j][0] * sc, py = y + line[j][1] * sc;
+          j === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+      }
+    }
+    ox += adv;
+  }
+  ctx.restore();
+}
+// largest size (capped at pref) at which a line of text fits the viewport width
+function fitSize(t, pref) {
+  return Math.min(pref, (W * 0.94) / (t.length * 0.95));
+}
+
+/* ---------------------------------------------------------------------
+   AUDIO - pure Web Audio oscillators and noise. The arcade smelled
+   like this, approximately.
+--------------------------------------------------------------------- */
+let AC = null, muted = false, thrustNode = null, saucerOsc = null;
+function audio() {
+  if (!AC) {
+    try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; }
+  }
+  if (AC && AC.state === 'suspended') AC.resume();
+  return AC;
+}
+function sfxFire() {
+  if (realMode) return; // sound does not travel in vacuum. yes, really.
+  const ac = audio(); if (!ac || muted) return;
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = 'square';
+  o.frequency.setValueAtTime(900, ac.currentTime);
+  o.frequency.exponentialRampToValueAtTime(180, ac.currentTime + 0.09);
+  g.gain.setValueAtTime(0.08, ac.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.1);
+  o.connect(g).connect(ac.destination);
+  o.start(); o.stop(ac.currentTime + 0.1);
+}
+function noiseBuf(ac, dur) {
+  const b = ac.createBuffer(1, ac.sampleRate * dur, ac.sampleRate);
+  const d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  return b;
+}
+function sfxBoom(big) {
+  if (realMode) return; // explosions are a visual medium out here
+  const ac = audio(); if (!ac || muted) return;
+  const src = ac.createBufferSource();
+  src.buffer = noiseBuf(ac, 0.4);
+  const f = ac.createBiquadFilter(); f.type = 'lowpass';
+  f.frequency.setValueAtTime(big ? 400 : 900, ac.currentTime);
+  f.frequency.exponentialRampToValueAtTime(60, ac.currentTime + 0.35);
+  const g = ac.createGain();
+  g.gain.setValueAtTime(big ? 0.35 : 0.18, ac.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.38);
+  src.connect(f).connect(g).connect(ac.destination);
+  src.start();
+}
+function sfxBeat(hi) {
+  if (realMode) return; // space has no heartbeat
+  const ac = audio(); if (!ac || muted) return;
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = 'square'; o.frequency.value = hi ? 105 : 75;
+  g.gain.setValueAtTime(0.06, ac.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.09);
+  o.connect(g).connect(ac.destination);
+  o.start(); o.stop(ac.currentTime + 0.09);
+}
+function thrustOn() {
+  const ac = audio(); if (!ac || muted || thrustNode) return;
+  const src = ac.createBufferSource();
+  src.buffer = noiseBuf(ac, 1); src.loop = true;
+  const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 140;
+  const g = ac.createGain(); g.gain.value = 0.16;
+  src.connect(f).connect(g).connect(ac.destination);
+  src.start();
+  thrustNode = { src, g };
+}
+function thrustOff() {
+  if (thrustNode) { try { thrustNode.src.stop(); } catch (e) {} thrustNode = null; }
+}
+function saucerOn() {
+  if (realMode) return; // the warble is a lie too
+  const ac = audio(); if (!ac || muted || saucerOsc) return;
+  const o = ac.createOscillator(), g = ac.createGain();
+  const lfo = ac.createOscillator(), lg = ac.createGain();
+  o.type = 'triangle'; o.frequency.value = 520;
+  lfo.frequency.value = 5; lg.gain.value = 120;
+  lfo.connect(lg).connect(o.frequency);
+  g.gain.value = 0.05;
+  o.connect(g).connect(ac.destination);
+  o.start(); lfo.start();
+  saucerOsc = { o, lfo };
+}
+function saucerOff() {
+  if (saucerOsc) { try { saucerOsc.o.stop(); saucerOsc.lfo.stop(); } catch (e) {} saucerOsc = null; }
+}
+
+/* ---------------------------------------------------------------------
+   INPUT
+--------------------------------------------------------------------- */
+const keys = {};
+const KONAMI = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','KeyB','KeyA'];
+let konamiIdx = 0, rapidFire = false;
+
+/* ---------------------------------------------------------------------
+   WORLD STATE
+--------------------------------------------------------------------- */
+const SECTIONS = ['about','projects','skills','contact','extras'];
+const LABELS = { about:'ABOUT', projects:'PROJECTS', skills:'SKILLS', contact:'CONTACT', extras:'???' };
+const unlocked = new Set();
+let state = 'TITLE';       // TITLE | PLAY | PANEL | PAUSE | OVER
+let score = 0, hiscore = 0, lives = 3, frame = 0;
+let respawnTimer = 0, beatTimer = 0, beatHi = false, saucerTimer = 900;
+let completeShown = false, fireCooldown = 0;
+try { hiscore = parseInt(localStorage.getItem('tsh_hiscore') || '0', 10) || 0; } catch (e) {}
+
+const ship = { x: 0, y: 0, vx: 0, vy: 0, a: -TAU / 4, thrusting: false, dead: true, inv: 0 };
+let rocks = [], bullets = [], parts = [], pops = [], saucer = null;
+
+const FACTS = [
+  'FUN FACT: THIS SITE IS ONE HTML FILE',
+  'FUN FACT: EVERY LETTER IS DRAWN LINE BY LINE',
+  'FUN FACT: I COMMAND A FLEET OF AI AGENTS',
+  'TIP: PRESS H FOR HYPERSPACE. PROBABLY SAFE',
+  'FUN FACT: NO TEMPLATES WERE USED. ONLY VECTORS',
+  'FUN FACT: THE PILOT ALSO PLAYS CHESS. DAILY',
+  'FUN FACT: 25 PLUS AZURE BADGES AND COUNTING',
+  'FUN FACT: THE MYSTERY ROCK KNOWS THINGS'
+];
+let factIdx = 0;
+
+/* ---------------------------------------------------------------------
+   THE VENDETTA - every saucer has family. His name was Kevin.
+--------------------------------------------------------------------- */
+let playFrames = 0, vendettaDone = false;
+const vendetta = { phase: null, t: 0, line: 0, timer: 0, spawn: 0 };
+let foes = [], foeBullets = [], bro = null, wreck = null;
+const EULOGY = [
+  '...KEVIN?',
+  'KEVIN. NO. WE HAD PLANS, KEVIN.',
+  'HE ONLY CARRIED FUN FACTS.',
+  'HE NEVER EVEN SHOT BACK.',
+  'YOU. PILOT. YOU DID THIS.',
+  'SWARM PROTOCOL: ENGAGED'
+];
+const EULOGY_T = 105; // frames per line
+function inSwarm() { return vendetta.phase === 'swarm'; }
+function startVendetta(x, y) {
+  vendettaDone = true;
+  const bar = H * 0.13;
+  wreck = { x, y: realMode ? y : Math.min(Math.max(y, bar + 40), H - bar - 40) };
+  const by = realMode ? wreck.y - 90 : Math.min(Math.max(wreck.y - 90, bar + 30), H - bar - 60);
+  bro = { x: realMode ? x - W / 2 - 60 : (x < W / 2 ? W + 50 : -50), y: by, tx: x, ty: by, arrived: false };
+  vendetta.phase = 'cutscene'; vendetta.t = 0; vendetta.line = -1;
+  state = 'CUTSCENE';
+  thrustOff(); saucerOff();
+  keys.fire = false; keys.thrust = false; keys.left = false; keys.right = false;
+}
+function beginSwarm() {
+  bro = null;
+  vendetta.phase = 'swarm';
+  vendetta.timer = 7200; vendetta.spawn = 0;
+  foes = []; foeBullets = [];
+  spawnFoe(); spawnFoe();
+  ship.inv = Math.max(ship.inv, 120);
+  state = 'PLAY';
+  showToast('SURVIVE 2:00 - ADRENALINE: FIRE SYSTEMS OVERCLOCKED', 3200);
+}
+function spawnFoe() {
+  const p = edgeSpawn();
+  foes.push({ x: p.x, y: p.y, vx: 0, vy: 0, t: rnd(0, 100), fire: rnd(70, 130) });
+}
+function endVendetta() {
+  for (const f of foes) { explode(f.x, f.y, 10, 3.5); }
+  sfxBoom(true);
+  foes = []; foeBullets = [];
+  vendetta.phase = null;
+  addScore(5000); scorePop(W / 2, H / 2 - 60, '+5000');
+  showToast('VENDETTA SURVIVED. THE FAMILY FORGIVES YOU. +5000', 4000);
+  FACTS.push('FUN FACT: KEVIN\'S BROTHER SENDS HIS REGARDS');
+  saucerOff(); saucerTimer = rnd(1100, 2200);
+}
+function clearVendettaCombat() {
+  foes = []; foeBullets = []; bro = null;
+  if (vendetta.phase === 'swarm') vendetta.phase = null;
+}
+function updateSwarm() {
+  if (--vendetta.timer <= 0) { endVendetta(); return; }
+  // ramp: 2 foes -> 5 foes over the 2 minutes
+  const want = 2 + Math.min(3, Math.floor((7200 - vendetta.timer) / 1800));
+  if (foes.length < want && --vendetta.spawn <= 0) { spawnFoe(); vendetta.spawn = 90; }
+  for (const f of foes) {
+    f.t++;
+    // lazy homing drift + sine bob: menacing, not unfair
+    const dx = ship.x - f.x, dy = ship.y - f.y, d = Math.hypot(dx, dy) || 1;
+    f.vx = f.vx * 0.96 + (dx / d) * 0.09;
+    f.vy = f.vy * 0.96 + (dy / d) * 0.09;
+    const sp = Math.hypot(f.vx, f.vy);
+    if (sp > 2.1) { f.vx *= 2.1 / sp; f.vy *= 2.1 / sp; }
+    f.x += f.vx; f.y += f.vy + Math.sin(f.t * 0.05) * 0.7;
+    wrap(f, 20);
+    if (!ship.dead && --f.fire <= 0) {
+      f.fire = rnd(80, 145);
+      const aim = Math.atan2(ship.y - f.y, ship.x - f.x) + rnd(-0.22, 0.22);
+      foeBullets.push({ x: f.x, y: f.y + 4, vx: Math.cos(aim) * 4.6, vy: Math.sin(aim) * 4.6, life: 150 });
+      sfxFire();
+    }
+  }
+  foeBullets = foeBullets.filter(b => (b.x += b.vx, b.y += b.vy, wrap(b, 4), --b.life > 0));
+  // player bullets vs foes
+  for (let i = foes.length - 1; i >= 0; i--) {
+    for (let j = bullets.length - 1; j >= 0; j--) {
+      if (dist2(foes[i], bullets[j]) < 19 * 19) {
+        bullets.splice(j, 1);
+        explode(foes[i].x, foes[i].y, 10, 3.5);
+        sfxBoom(false);
+        addScore(250); scorePop(foes[i].x, foes[i].y, '+250');
+        foes.splice(i, 1);
+        break;
+      }
+    }
+  }
+  // foe bullets + foe hulls vs ship
+  if (!ship.dead && ship.inv <= 0) {
+    for (let j = foeBullets.length - 1; j >= 0; j--) {
+      if (dist2(foeBullets[j], ship) < 11 * 11) { foeBullets.splice(j, 1); killShip(); break; }
+    }
+    if (!ship.dead) {
+      for (const f of foes) { if (dist2(f, ship) < 17 * 17) { killShip(); break; } }
+    }
+  }
+  // war drums
+  if (foes.length > 0 && !saucerOsc && !muted && state === 'PLAY') saucerOn();
+  if (foes.length === 0) saucerOff();
+}
+function fmtTime(fr) {
+  const s = Math.ceil(fr / 60);
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+
+/* ---------------------------------------------------------------------
+   REALISM PROTOCOL - press G. Space becomes big, silent and honest.
+   A compass appears, because realism without navigation is just loss.
+--------------------------------------------------------------------- */
+let realMode = false, stars = [];
+const cam = { x: 0, y: 0 };
+function worldW() { return realMode ? W * 3.5 : W; }
+function worldH() { return realMode ? H * 3.5 : H; }
+function makeStars() {
+  stars = [];
+  for (let i = 0; i < 160; i++) {
+    stars.push({ x: rnd(0, worldW()), y: rnd(0, worldH()), p: Math.random() < 0.5 ? 0.35 : 0.65, s: rnd(0.6, 1.8) });
+  }
+}
+// world -> screen coords, wrap-aware; p = parallax factor for stars
+function v2s(x, y, p) {
+  if (!realMode) return [x, y];
+  const WW = worldW(), WH = worldH(), f = (p === undefined ? 1 : p);
+  let dx = (((x - cam.x * f) % WW) + WW) % WW; if (dx > WW / 2) dx -= WW;
+  let dy = (((y - cam.y * f) % WH) + WH) % WH; if (dy > WH / 2) dy -= WH;
+  return [dx, dy];
+}
+// shortest wrapped vector from the ship to a target
+function tdelta(x, y) {
+  const WW = worldW(), WH = worldH();
+  let dx = (((x - ship.x) % WW) + WW) % WW; if (dx > WW / 2) dx -= WW;
+  let dy = (((y - ship.y) % WH) + WH) % WH; if (dy > WH / 2) dy -= WH;
+  return [dx, dy];
+}
+function toggleReal() {
+  realMode = !realMode;
+  if (realMode) {
+    makeStars();
+    cam.x = ship.x - W / 2; cam.y = ship.y - H / 2;
+    // scatter the field across deep space, none on top of the pilot
+    for (const r of rocks) {
+      for (let t = 0; t < 9; t++) {
+        r.x = rnd(0, worldW()); r.y = rnd(0, worldH());
+        const d = tdelta(r.x, r.y);
+        if (d[0] * d[0] + d[1] * d[1] > 400 * 400) break;
+      }
+    }
+    saucerOff();
+    showToast('REALISM PROTOCOL: SPACE IS BIG. SOUND IS A LIE. TRUST THE COMPASS.', 4200);
+  } else {
+    const mod = (v, m) => ((v % m) + m) % m;
+    for (const o of rocks.concat(bullets, parts, foes, foeBullets, pops)) { o.x = mod(o.x, W); o.y = mod(o.y, H); }
+    ship.x = mod(ship.x, W); ship.y = mod(ship.y, H);
+    if (saucer) { saucer.x = mod(saucer.x, W); saucer.baseY = mod(saucer.baseY, H * 0.7); if (state === 'PLAY') saucerOn(); }
+    cam.x = 0; cam.y = 0;
+    showToast('ARCADE PHYSICS RESTORED. 1979 SENDS ITS REGARDS.', 3000);
+  }
+}
+
+function rnd(a, b) { return a + Math.random() * (b - a); }
+function wrap(o, r) {
+  const WW = worldW(), WH = worldH();
+  if (o.x < -r) o.x = WW + r; if (o.x > WW + r) o.x = -r;
+  if (o.y < -r) o.y = WH + r; if (o.y > WH + r) o.y = -r;
+}
+function dist2(a, b) { const dx = a.x - b.x, dy = a.y - b.y; return dx * dx + dy * dy; }
+
+function makeRock(x, y, size, label) {
+  const r = size === 3 ? 52 : size === 2 ? 26 : 13;
+  const n = 11, verts = [];
+  for (let i = 0; i < n; i++) verts.push(rnd(0.72, 1.18));
+  const sp = (label ? rnd(0.25, 0.6) : rnd(0.5, 1.6)) * (size === 1 ? 1.8 : size === 2 ? 1.3 : 1);
+  const dir = rnd(0, TAU);
+  return {
+    x, y, r, size, verts, label: label || null,
+    vx: Math.cos(dir) * sp, vy: Math.sin(dir) * sp,
+    ang: rnd(0, TAU), spin: rnd(-0.012, 0.012)
+  };
+}
+function edgeSpawn() {
+  // spawn on an edge so nothing materializes inside the pilot
+  if (Math.random() < 0.5) return { x: Math.random() < 0.5 ? -60 : worldW() + 60, y: rnd(0, worldH()) };
+  return { x: rnd(0, worldW()), y: Math.random() < 0.5 ? -60 : worldH() + 60 };
+}
+function spawnField() {
+  rocks = [];
+  for (const key of SECTIONS) {
+    if (!unlocked.has(key)) {
+      const p = edgeSpawn();
+      rocks.push(makeRock(p.x, p.y, 3, key));
+    }
+  }
+  const plain = 2 + Math.min(3, unlocked.size);
+  for (let i = 0; i < plain; i++) {
+    const p = edgeSpawn();
+    rocks.push(makeRock(p.x, p.y, unlocked.size > 2 ? 3 : 2));
+  }
+}
+function explode(x, y, n, sp) {
+  for (let i = 0; i < n; i++) {
+    const d = rnd(0, TAU), v = rnd(0.5, sp);
+    parts.push({ x, y, vx: Math.cos(d) * v, vy: Math.sin(d) * v,
+      len: rnd(2, 9), ang: rnd(0, TAU), spin: rnd(-0.2, 0.2), life: rnd(20, 55) });
+  }
+}
+function scorePop(x, y, txt) { pops.push({ x, y, txt, life: 50 }); }
+function addScore(n) {
+  score += n;
+  if (score > hiscore) {
+    hiscore = score;
+    try { localStorage.setItem('tsh_hiscore', String(hiscore)); } catch (e) {}
+  }
+}
+function resetShip() {
+  ship.x = worldW() / 2; ship.y = worldH() / 2; ship.vx = 0; ship.vy = 0;
+  ship.a = -TAU / 4; ship.dead = false; ship.inv = 150;
+}
+function killShip() {
+  if (ship.dead || ship.inv > 0) return;
+  explode(ship.x, ship.y, 14, 4);
+  sfxBoom(true); thrustOff();
+  ship.dead = true; lives--;
+  if (lives < 0) {
+    state = 'OVER'; saucerOff(); clearVendettaCombat();
+  } else {
+    respawnTimer = 110;
+  }
+}
+/* ---------------------------------------------------------------------
+   PANELS + DOM
+--------------------------------------------------------------------- */
+const secbar = document.getElementById('secbar');
+const hints = document.getElementById('hints');
+const toastEl = document.getElementById('toast');
+const IS_TOUCH = ('ontouchstart' in window);
+let panelReturn = 'TITLE', pendingPanel = null, toastTimer = null;
+
+function showToast(msg, ms) {
+  toastEl.textContent = msg;
+  toastEl.style.opacity = 1;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toastEl.style.opacity = 0; }, ms || 2600);
+}
+function hidePanels() {
+  document.querySelectorAll('.panel').forEach(p => { p.style.display = 'none'; });
+}
+function openPanel(key) {
+  hidePanels();
+  const el = document.getElementById('panel-' + key);
+  if (!el) return;
+  if (state !== 'PANEL') panelReturn = state;
+  state = 'PANEL';
+  thrustOff(); saucerOff();
+  if (key === 'nav') {
+    document.querySelectorAll('#panel-nav .navlist button').forEach(b => {
+      const k = b.getAttribute('data-open');
+      b.querySelector('.state').textContent = unlocked.has(k) ? 'UNLOCKED' : 'LOCKED';
+    });
+  }
+  el.style.display = 'block';
+}
+function closePanels() {
+  hidePanels();
+  state = panelReturn === 'PANEL' ? 'PLAY' : panelReturn;
+  if (state === 'PLAY' && saucer) saucerOn();
+}
+function unlock(key) {
+  if (!unlocked.has(key)) {
+    unlocked.add(key);
+    const btn = document.querySelector('.sec[data-key="' + key + '"]');
+    if (btn) btn.classList.add('on');
+    showToast('SECTOR UNLOCKED: ' + LABELS[key]);
+    pendingPanel = { key, t: 38 };
+    if (unlocked.size === SECTIONS.length && !completeShown) {
+      completeShown = true;
+      saucerTimer = Math.min(saucerTimer, 420);
+      nextGold = true;
+    }
+  } else {
+    openPanel(key);
+  }
+}
+let nextGold = false;
+
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closePanels));
+document.querySelectorAll('.sec').forEach(b => b.addEventListener('click', () => {
+  const k = b.getAttribute('data-key');
+  if (unlocked.has(k)) openPanel(k);
+  else showToast('LOCKED - SHOOT THE ' + LABELS[k] + ' ROCK');
+}));
+document.querySelectorAll('#panel-nav [data-open]').forEach(b => b.addEventListener('click', () => {
+  openPanel(b.getAttribute('data-open'));
+}));
+const navReal = document.getElementById('nav-real');
+if (navReal) navReal.addEventListener('click', () => { toggleReal(); closePanels(); });
+
+/* ---------------------------------------------------------------------
+   GAME FLOW
+--------------------------------------------------------------------- */
+function startGame() {
+  score = 0; lives = 3;
+  bullets = []; parts = []; pops = [];
+  playFrames = 0; vendettaDone = false; vendetta.phase = null;
+  foes = []; foeBullets = []; bro = null; wreck = null;
+  saucer = null; saucerOff(); saucerTimer = rnd(700, 1100);
+  spawnField(); resetShip();
+  state = 'PLAY';
+  secbar.style.display = 'flex';
+  if (!IS_TOUCH) hints.style.display = 'block';
+  audio();
+}
+function hyperspace() {
+  if (ship.dead) return;
+  explode(ship.x, ship.y, 6, 2);
+  ship.x = rnd(40, worldW() - 40); ship.y = rnd(40, worldH() - 40);
+  ship.vx = 0; ship.vy = 0;
+  if (Math.random() < 0.11) {
+    ship.inv = 0;
+    showToast('HYPERSPACE MALFUNCTION');
+    killShip();
+  }
+}
+
+/* ---------------------------------------------------------------------
+   UPDATE
+--------------------------------------------------------------------- */
+function update() {
+  if (state !== 'PLAY') {
+    if (state === 'TITLE' || state === 'OVER') {
+      for (const r of rocks) { r.x += r.vx * 0.5; r.y += r.vy * 0.5; r.ang += r.spin; wrap(r, r.r); }
+      parts = parts.filter(p => (p.x += p.vx, p.y += p.vy, p.ang += p.spin, --p.life > 0));
+    }
+    if (state === 'CUTSCENE') {
+      for (const r of rocks) { r.x += r.vx * 0.3; r.y += r.vy * 0.3; r.ang += r.spin * 0.5; wrap(r, r.r); }
+      parts = parts.filter(p => (p.x += p.vx, p.y += p.vy, p.ang += p.spin, --p.life > 0));
+      if (bro && !bro.arrived) {
+        bro.x += (bro.tx - bro.x) * 0.03; bro.y += (bro.ty - bro.y) * 0.03;
+        if (Math.abs(bro.tx - bro.x) < 4) { bro.arrived = true; vendetta.t = 0; vendetta.line = 0; }
+      } else if (bro) {
+        if (++vendetta.t >= EULOGY_T) {
+          vendetta.t = 0;
+          if (++vendetta.line >= EULOGY.length) beginSwarm();
+          else if (vendetta.line === EULOGY.length - 1) sfxBoom(true); // the rage note
+        }
+      }
+    }
+    return;
+  }
+
+  // pending section panel after the explosion clears
+  if (pendingPanel && --pendingPanel.t <= 0) {
+    const k = pendingPanel.key; pendingPanel = null; openPanel(k);
+    return;
+  }
+
+  playFrames++;
+  if (inSwarm()) updateSwarm();
+
+  // ship (adrenaline buffs while the family is hunting you)
+  const ROT = inSwarm() ? 0.095 : 0.078;
+  if (!ship.dead) {
+    if (keys.left) ship.a -= ROT;
+    if (keys.right) ship.a += ROT;
+    ship.thrusting = !!keys.thrust;
+    if (ship.thrusting) {
+      ship.vx += Math.cos(ship.a) * 0.13;
+      ship.vy += Math.sin(ship.a) * 0.13;
+      thrustOn();
+    } else thrustOff();
+    if (!realMode) { ship.vx *= 0.992; ship.vy *= 0.992; } // the vacuum keeps your sins
+    const spd = Math.hypot(ship.vx, ship.vy);
+    const vcap = realMode ? 12 : 8;
+    if (spd > vcap) { ship.vx *= vcap / spd; ship.vy *= vcap / spd; }
+    ship.x += ship.vx; ship.y += ship.vy;
+    wrap(ship, 14);
+    if (realMode) { cam.x = ship.x - W / 2; cam.y = ship.y - H / 2; }
+    if (ship.inv > 0) ship.inv--;
+
+    if (fireCooldown > 0) fireCooldown--;
+    const CAP = rapidFire ? 99 : inSwarm() ? 6 : 4;
+    if (keys.fire && fireCooldown <= 0 && bullets.length < CAP) {
+      bullets.push({
+        x: ship.x + Math.cos(ship.a) * 14, y: ship.y + Math.sin(ship.a) * 14,
+        vx: Math.cos(ship.a) * 9 + ship.vx, vy: Math.sin(ship.a) * 9 + ship.vy,
+        life: inSwarm() ? 75 : 58
+      });
+      fireCooldown = rapidFire ? 5 : inSwarm() ? 7 : 13;
+      sfxFire();
+    }
+  } else if (lives >= 0 && --respawnTimer <= 0) {
+    let clear = true;
+    const c = { x: worldW() / 2, y: worldH() / 2 };
+    for (const r of rocks) if (dist2(r, c) < (r.r + 130) * (r.r + 130)) { clear = false; break; }
+    if (clear) for (const f of foes) if (dist2(f, c) < 160 * 160) { clear = false; break; }
+    if (clear) resetShip(); else respawnTimer = 20;
+  }
+
+  // bullets
+  bullets = bullets.filter(b => (b.x += b.vx, b.y += b.vy, wrap(b, 4), --b.life > 0));
+
+  // rocks
+  for (const r of rocks) { r.x += r.vx; r.y += r.vy; r.ang += r.spin; wrap(r, r.r); }
+
+  // saucer (the family stays home during the vendetta)
+  if (!inSwarm() && !saucer && --saucerTimer <= 0) {
+    const fromLeft = Math.random() < 0.5;
+    saucer = {
+      x: fromLeft ? -40 : worldW() + 40, baseY: rnd(worldH() * 0.15, worldH() * 0.7),
+      y: 0, vx: (fromLeft ? 1 : -1) * (nextGold ? 1.6 : 2.4), t: 0, gold: nextGold
+    };
+    nextGold = false;
+    saucerOn();
+  }
+  if (saucer) {
+    saucer.t++; saucer.x += saucer.vx;
+    saucer.y = saucer.baseY + Math.sin(saucer.t * 0.02) * 46;
+    if (saucer.x < -60 || saucer.x > worldW() + 60) {
+      if (saucer.gold) nextGold = true; // the HIRE ME saucer always returns
+      saucer = null; saucerOff(); saucerTimer = rnd(1100, 2200);
+    }
+  }
+
+  // particles + score pops
+  parts = parts.filter(p => (p.x += p.vx, p.y += p.vy, p.ang += p.spin, --p.life > 0));
+  pops = pops.filter(p => (p.y -= 0.5, --p.life > 0));
+
+  // bullets vs rocks
+  outer:
+  for (let i = rocks.length - 1; i >= 0; i--) {
+    const r = rocks[i];
+    for (let j = bullets.length - 1; j >= 0; j--) {
+      const b = bullets[j];
+      if (dist2(r, b) < (r.r + 3) * (r.r + 3)) {
+        bullets.splice(j, 1);
+        rocks.splice(i, 1);
+        explode(r.x, r.y, r.size * 5, 3);
+        sfxBoom(r.size === 3);
+        if (r.label) {
+          addScore(200); scorePop(r.x, r.y, '+200');
+          for (let k = 0; k < 3; k++) rocks.push(makeRock(r.x, r.y, 2));
+          unlock(r.label);
+        } else {
+          const pts = r.size === 3 ? 20 : r.size === 2 ? 50 : 100;
+          addScore(pts); scorePop(r.x, r.y, '+' + pts);
+          if (r.size > 1) for (let k = 0; k < 2; k++) rocks.push(makeRock(r.x, r.y, r.size - 1));
+        }
+        continue outer;
+      }
+    }
+  }
+
+  // bullets vs saucer
+  if (saucer) {
+    for (let j = bullets.length - 1; j >= 0; j--) {
+      if (dist2(saucer, bullets[j]) < 20 * 20) {
+        bullets.splice(j, 1);
+        explode(saucer.x, saucer.y, 12, 3.5);
+        sfxBoom(true);
+        if (saucer.gold) {
+          addScore(9999); scorePop(saucer.x, saucer.y, '+9999');
+          showToast('ACHIEVEMENT: HIRED. PENDING YOUR EMAIL...', 3500);
+          pendingPanel = { key: 'contact', t: 50 };
+        } else if (playFrames > 7200 && !vendettaDone) {
+          addScore(500); scorePop(saucer.x, saucer.y, '+500');
+          startVendetta(saucer.x, saucer.y);
+        } else {
+          addScore(500); scorePop(saucer.x, saucer.y, '+500');
+          showToast(FACTS[factIdx++ % FACTS.length], 3200);
+        }
+        if (window.AIHooks && !saucer.gold) AIHooks.saucerKilled(saucer.x, saucer.y);
+        saucer = null; saucerOff(); saucerTimer = rnd(1100, 2200);
+        break;
+      }
+    }
+  }
+
+  // ship vs rocks
+  if (!ship.dead && ship.inv <= 0) {
+    for (const r of rocks) {
+      if (dist2(r, ship) < (r.r + 9) * (r.r + 9)) { killShip(); break; }
+    }
+  }
+
+  // wave cleared
+  if (rocks.length === 0 && state === 'PLAY') {
+    addScore(500);
+    showToast(unlocked.size === SECTIONS.length
+      ? 'FIELD CLEARED. +500. MORE ROCKS INBOUND'
+      : 'WAVE CLEARED +500');
+    spawnField();
+  }
+
+  // heartbeat
+  if (!ship.dead && --beatTimer <= 0) {
+    sfxBeat(beatHi); beatHi = !beatHi;
+    beatTimer = 16 + Math.min(54, rocks.length * 6);
+  }
+}
+
+/* ---------------------------------------------------------------------
+   DRAW
+--------------------------------------------------------------------- */
+function drawShip(x, y, a, sc, flame) {
+  ctx.save();
+  ctx.translate(x, y); ctx.rotate(a); ctx.scale(sc, sc);
+  ctx.beginPath();
+  ctx.moveTo(14, 0); ctx.lineTo(-10, 8); ctx.lineTo(-6, 0); ctx.lineTo(-10, -8);
+  ctx.closePath(); ctx.stroke();
+  if (flame) {
+    ctx.beginPath();
+    ctx.moveTo(-7, 4); ctx.lineTo(-15, 0); ctx.lineTo(-7, -4);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+function drawRock(r) {
+  const sp = v2s(r.x, r.y);
+  ctx.save();
+  ctx.translate(sp[0], sp[1]);
+  ctx.beginPath();
+  const n = r.verts.length;
+  for (let i = 0; i <= n; i++) {
+    const a = r.ang + (i % n) / n * TAU;
+    const rad = r.r * r.verts[i % n];
+    const px = Math.cos(a) * rad, py = Math.sin(a) * rad;
+    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+  ctx.restore();
+  if (r.label) vtext(LABELS[r.label], sp[0], sp[1] - 5, 11, 'center');
+}
+function drawSaucer(s) {
+  const sp = v2s(s.x, s.y);
+  ctx.save();
+  ctx.translate(sp[0], sp[1]);
+  ctx.beginPath();
+  ctx.moveTo(-16, 2); ctx.lineTo(16, 2); ctx.lineTo(8, 9); ctx.lineTo(-8, 9); ctx.closePath();
+  ctx.moveTo(-16, 2); ctx.lineTo(-8, -4); ctx.lineTo(8, -4); ctx.lineTo(16, 2);
+  ctx.moveTo(-4, -4); ctx.lineTo(-3, -9); ctx.lineTo(3, -9); ctx.lineTo(4, -4);
+  ctx.stroke();
+  ctx.restore();
+  if (s.gold) vtext('HIRE ME', sp[0], sp[1] - 26, 10, 'center', 0.6 + 0.4 * Math.sin(frame * 0.15));
+}
+function draw() {
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = '#fff';
+  ctx.fillStyle = '#fff';
+  ctx.shadowColor = 'rgba(255,255,255,0.85)';
+  ctx.shadowBlur = 11;
+  ctx.lineWidth = 1.5;
+
+  if (realMode) {
+    ctx.save(); ctx.shadowBlur = 0;
+    for (const st of stars) {
+      const sp = v2s(st.x, st.y, st.p);
+      if (sp[0] < -2 || sp[0] > W + 2 || sp[1] < -2 || sp[1] > H + 2) continue;
+      ctx.globalAlpha = st.p < 0.5 ? 0.3 : 0.55;
+      ctx.fillRect(sp[0], sp[1], st.s, st.s);
+    }
+    ctx.restore();
+  }
+
+  for (const r of rocks) drawRock(r);
+  for (const p of parts) {
+    const sp = v2s(p.x, p.y);
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, p.life / 25);
+    ctx.translate(sp[0], sp[1]); ctx.rotate(p.ang);
+    ctx.beginPath(); ctx.moveTo(-p.len / 2, 0); ctx.lineTo(p.len / 2, 0); ctx.stroke();
+    ctx.restore();
+  }
+  for (const b of bullets) { const sp = v2s(b.x, b.y); ctx.fillRect(sp[0] - 1.5, sp[1] - 1.5, 3, 3); }
+  for (const p of pops) { const sp = v2s(p.x, p.y); vtext(p.txt, sp[0], sp[1], 10, 'center', Math.min(1, p.life / 30)); }
+  if (saucer) drawSaucer(saucer);
+  for (const f of foes) drawSaucer(f);
+  for (const b of foeBullets) { const sp = v2s(b.x, b.y); ctx.fillRect(sp[0] - 2, sp[1] - 2, 4, 4); }
+
+  if (state === 'CUTSCENE') {
+    // the pilot, frozen in guilt
+    if (!ship.dead) { const shp = v2s(ship.x, ship.y); drawShip(shp[0], shp[1], ship.a, 1, false); }
+    // grave marker at the wreck
+    if (wreck) {
+      const wp = v2s(wreck.x, wreck.y);
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(wp[0], wp[1] - 12); ctx.lineTo(wp[0], wp[1] + 8);
+      ctx.moveTo(wp[0] - 7, wp[1] - 4); ctx.lineTo(wp[0] + 7, wp[1] - 4);
+      ctx.stroke();
+      ctx.restore();
+      vtext('RIP', wp[0], wp[1] + 14, 8, 'center', 0.7);
+    }
+    if (bro) drawSaucer(bro);
+    // cinematic letterbox
+    const bar = Math.floor(H * 0.13);
+    ctx.save();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, W, bar); ctx.fillRect(0, H - bar, W, bar);
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.globalAlpha = 0.5;
+    ctx.beginPath(); ctx.moveTo(0, bar); ctx.lineTo(W, bar);
+    ctx.moveTo(0, H - bar); ctx.lineTo(W, H - bar); ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = '#fff';
+    if (vendetta.line >= 0 && vendetta.line < EULOGY.length) {
+      const a = Math.min(1, vendetta.t / 12);
+      vtext(EULOGY[vendetta.line], W / 2, H - bar / 2 - 8, Math.min(16, W * 0.022), 'center', a);
+    }
+    vtext(IS_TOUCH ? 'TAP TO SKIP' : 'ENTER TO SKIP', W - 20, bar / 2 - 5, 10, 'right', 0.45);
+    return;
+  }
+
+  if (state === 'TITLE') {
+    const T1 = 'DEAD SPACE HUSTLE';
+    const T2 = 'DITSHWANELO TUMANE - SOFTWARE ENGINEER';
+    const T3 = 'CLOUD, AI + FULL-STACK DEV // ASTEROID FIELD PORTFOLIO';
+    const big = fitSize(T1, 60);
+    vtext(T1, W / 2, H * 0.24, big, 'center');
+    vtext(T2, W / 2, H * 0.24 + big + 18, fitSize(T2, 15), 'center', 0.85);
+    vtext(T3, W / 2, H * 0.24 + big + 44, fitSize(T3, 12), 'center', 0.6);
+    if (frame % 64 < 40) vtext(IS_TOUCH ? 'TAP TO START' : 'PRESS ENTER TO START', W / 2, H * 0.52, 20, 'center');
+    const T5 = 'YOU ARE THE SHIP. THE PORTFOLIO IS THE FIELD.';
+    vtext(T5, W / 2, H * 0.62, fitSize(T5, 13), 'center', 0.75);
+    const T6 = 'SHOOT A LABELED ROCK TO OPEN THAT SECTOR';
+    vtext(T6, W / 2, H * 0.62 + 24, fitSize(T6, 13), 'center', 0.75);
+    if (!IS_TOUCH) {
+      const T7 = 'ROTATE: ARROWS   THRUST: UP   FIRE: SPACE   HYPERSPACE: H';
+      vtext(T7, W / 2, H * 0.62 + 54, fitSize(T7, 12), 'center', 0.6);
+      vtext('N: NAV   G: REALISM PROTOCOL', W / 2, H * 0.62 + 76, 12, 'center', 0.6);
+    }
+    vtext('EST 1979 - REBOOTED 2026 - 1 COIN 1 PLAY', W / 2, H - 34, 11, 'center', 0.5);
+    if (hiscore > 0) vtext('HI ' + hiscore, W / 2, 16, 14, 'center', 0.8);
+    return;
+  }
+
+  // HUD
+  vtext(String(score), 24, 18, 26);
+  vtext('HI ' + hiscore, W / 2, 16, 13, 'center', 0.8);
+  for (let i = 0; i < Math.max(0, lives); i++) drawShip(34 + i * 24, 64, -TAU / 4, 0.75, false);
+  if (inSwarm() && (vendetta.timer > 600 || frame % 30 < 18)) {
+    vtext('SURVIVE ' + fmtTime(vendetta.timer), W / 2, 40, 18, 'center');
+  }
+
+  if (!ship.dead && (ship.inv <= 0 || frame % 10 < 6)) {
+    const sp = v2s(ship.x, ship.y);
+    drawShip(sp[0], sp[1], ship.a, 1, ship.thrusting && frame % 6 < 3);
+  }
+
+  // REALISM compass - the rocks are out there somewhere. these are the somewheres.
+  if (realMode && !ship.dead && (state === 'PLAY' || state === 'PAUSE')) {
+    const ccx = W / 2, ccy = H / 2, targets = [];
+    let best = null, bd = Infinity;
+    for (const r of rocks) {
+      if (r.label) { targets.push({ x: r.x, y: r.y, t: LABELS[r.label][0] }); continue; }
+      const d = tdelta(r.x, r.y), dd = d[0] * d[0] + d[1] * d[1];
+      if (dd < bd) { bd = dd; best = { x: r.x, y: r.y, t: 'R' }; }
+    }
+    if (best) targets.push(best);
+    if (saucer) targets.push({ x: saucer.x, y: saucer.y, t: 'U' });
+    for (const f of foes) targets.push({ x: f.x, y: f.y, t: 'X' });
+    for (const tg of targets) {
+      const d = tdelta(tg.x, tg.y);
+      if (Math.abs(d[0]) < W / 2 - 30 && Math.abs(d[1]) < H / 2 - 30) continue; // already on screen
+      const a = Math.atan2(d[1], d[0]);
+      const dist = Math.round(Math.hypot(d[0], d[1]) / 10) * 10;
+      ctx.save();
+      ctx.globalAlpha = 0.85;
+      ctx.translate(ccx + Math.cos(a) * 56, ccy + Math.sin(a) * 56);
+      ctx.rotate(a);
+      ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(-4, 4.5); ctx.lineTo(-4, -4.5); ctx.closePath(); ctx.stroke();
+      ctx.restore();
+      vtext(tg.t, ccx + Math.cos(a) * 78, ccy + Math.sin(a) * 78 - 5, 9, 'center', 0.8);
+      vtext(String(dist), ccx + Math.cos(a) * 78, ccy + Math.sin(a) * 78 + 7, 7, 'center', 0.45);
+    }
+  }
+
+  if (completeShown && state === 'PLAY') {
+    vtext('ALL SECTORS CLEAR - TRANSMISSION OPEN', W / 2, H - 64, 11, 'center', 0.45);
+  }
+  if (state === 'PAUSE') {
+    vtext('PAUSED', W / 2, H / 2 - 30, 40, 'center');
+    vtext('PRESS P TO RESUME', W / 2, H / 2 + 26, 14, 'center', 0.8);
+  }
+  if (state === 'OVER') {
+    vtext('GAME OVER', W / 2, H / 2 - 60, 48, 'center');
+    const left = SECTIONS.filter(s => !unlocked.has(s)).length;
+    if (left > 0) vtext(left + ' SECTOR' + (left > 1 ? 'S' : '') + ' STILL LOCKED', W / 2, H / 2 + 8, 15, 'center', 0.8);
+    else vtext('ALL SECTORS UNLOCKED. RESPECT.', W / 2, H / 2 + 8, 15, 'center', 0.8);
+    if (frame % 64 < 40) vtext(IS_TOUCH ? 'TAP TO RETRY' : 'PRESS ENTER TO RETRY', W / 2, H / 2 + 44, 18, 'center');
+  }
+}
+
+/* ---------------------------------------------------------------------
+   INPUT WIRING
+--------------------------------------------------------------------- */
+const KEYMAP = {
+  ArrowLeft: 'left', KeyA: 'left',
+  ArrowRight: 'right', KeyD: 'right',
+  ArrowUp: 'thrust', KeyW: 'thrust',
+  Space: 'fire'
+};
+window.addEventListener('keydown', e => {
+  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
+
+  // konami
+  if (e.code === KONAMI[konamiIdx]) {
+    if (++konamiIdx === KONAMI.length) {
+      konamiIdx = 0;
+      if (!rapidFire) { rapidFire = true; showToast('CHEAT ACTIVATED: UNLIMITED PEW'); }
+    }
+  } else konamiIdx = (e.code === KONAMI[0]) ? 1 : 0;
+
+  const k = KEYMAP[e.code];
+  if (k) keys[k] = true;
+
+  if (state === 'CUTSCENE' && (e.code === 'Enter' || e.code === 'Space')) {
+    beginSwarm();
+    return;
+  }
+  if (e.code === 'Enter') {
+    audio();
+    if (state === 'TITLE') startGame();
+    else if (state === 'OVER') startGame();
+  }
+  if (e.code === 'Escape' && state === 'PANEL') closePanels();
+  if (e.code === 'KeyN' && state !== 'PANEL') openPanel('nav');
+  if (e.code === 'KeyM') {
+    muted = !muted;
+    if (muted) { thrustOff(); saucerOff(); }
+    else if (saucer && state === 'PLAY') saucerOn();
+    showToast('SOUND ' + (muted ? 'OFF' : 'ON'), 1200);
+  }
+  if (e.code === 'KeyP') {
+    if (state === 'PLAY') { state = 'PAUSE'; thrustOff(); saucerOff(); }
+    else if (state === 'PAUSE') { state = 'PLAY'; if (saucer) saucerOn(); }
+  }
+  if (e.code === 'KeyH' && state === 'PLAY') hyperspace();
+  if (e.code === 'KeyG' && (state === 'PLAY' || state === 'PAUSE')) toggleReal();
+});
+window.addEventListener('keyup', e => {
+  const k = KEYMAP[e.code];
+  if (k) keys[k] = false;
+});
+cvs.addEventListener('pointerdown', () => {
+  audio();
+  if (state === 'TITLE' || state === 'OVER') startGame();
+  else if (state === 'CUTSCENE') beginSwarm();
+});
+
+// touch controls
+if (IS_TOUCH) {
+  document.getElementById('touch').style.display = 'block';
+  const bind = (id, key) => {
+    const el = document.getElementById(id);
+    el.addEventListener('touchstart', e => { e.preventDefault(); keys[key] = true; audio(); }, { passive: false });
+    el.addEventListener('touchend', e => { e.preventDefault(); keys[key] = false; }, { passive: false });
+  };
+  bind('tL', 'left'); bind('tR', 'right'); bind('tT', 'thrust'); bind('tF', 'fire');
+}
+
+/* ---------------------------------------------------------------------
+   BOOT
+--------------------------------------------------------------------- */
+spawnField();
+(function tick() {
+  frame++;
+  update();
+  draw();
+  requestAnimationFrame(tick);
+})();
+</script>
+<script src="ai.js" defer></script>
+<!-- v1.2 - AI wing online 2026-06-11 -->
+</body>
+</html>
