@@ -62,21 +62,3 @@ iButler, Job Hunter, CashConnect, Clearbound in the PROJECTS panel.
 | Mission briefing generator | CONTACT panel → paste a job description |
 | Memorial wall | ??? panel — every dead saucer gets an AI obituary |
 | Local brain | Terminal footer → ENGAGE downloads a small LLM to the visitor's GPU (WebGPU) |
-
-**Architecture:** the site never touches the Gemini key. It calls a Supabase Edge
-Function (`oracle`, project `asteroid-oracle`) which holds the key as a secret and
-proxies Gemini. Every feature has canned fallbacks — the site works fine offline.
-
-**⚠ ONE SETUP STEP:** Supabase dashboard → project `asteroid-oracle` →
-Edge Functions → Secrets → add `GEMINI_API_KEY` = your key.
-(Optional: `GEMINI_MODEL` to override the default `gemini-2.5-flash` — chosen
-because `gemini-2.0-flash`'s free tier was retired (quota limit 0).)
-Free-tier Supabase projects pause after ~1 week idle; wake it in the dashboard
-if the oracle goes quiet. Gemini free tier has daily request caps — when
-exceeded, the site silently falls back to canned lines until the quota resets.
-
-## Deploy free
-
-**GitHub Pages:** push this folder to a repo → Settings → Pages → deploy from main branch.
-**Netlify/Vercel:** drag the folder onto their dashboard. Done.
-(Deploy both files + the CV pdf together.)
