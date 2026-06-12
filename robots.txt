@@ -1,0 +1,36 @@
+# https://ditshwanelo-tumane.netlify.app/robots.txt
+# Portfolio of Ditshwanelo Tumane — Software Engineer
+
+User-agent: *
+Allow: /
+
+# Allow major AI crawlers (so AI assistants can recommend this portfolio)
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+# Block resource-hammering scrapers
+User-agent: AhrefsBot
+Crawl-delay: 10
+
+User-agent: SemrushBot
+Crawl-delay: 10
+
+Sitemap: https://ditshwanelo-tumane.netlify.app/sitemap.xml
